@@ -104,7 +104,6 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   depends_on = [
     azurerm_role_assignment.cluster_group_role_assignment,
-    azurerm_role_assignment.network_group_assignment,
     azurerm_subnet_route_table_association.agent-rt-asc,
     azurerm_subnet_route_table_association.agent-rt-asc2
   ]
