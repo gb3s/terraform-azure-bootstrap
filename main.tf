@@ -17,7 +17,7 @@ resource "azurerm_role_assignment" "node_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "cluster_group_role_assignment" {
-  scope                = azurerm_resource_group.bootsrap.id
+  scope                = azurerm_resource_group.bootstrap.id
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
 }
@@ -56,12 +56,12 @@ resource "azurerm_subnet" "agentnet2" {
 }
 
 
-resource "azurerm_subnet_route_table_association" "agent-rt-asc" {
+resource "azurerm_subnet_route_table_association" "system-rt-asc" {
   subnet_id      = azurerm_subnet.agentnet.id
   route_table_id = azurerm_route_table.cluster.id
 }
 
-resource "azurerm_subnet_route_table_association" "agent-rt-asc2" {
+resource "azurerm_subnet_route_table_association" "agent-rt-asc" {
   subnet_id      = azurerm_subnet.agentnet2.id
   route_table_id = azurerm_route_table.cluster.id
 }
@@ -87,7 +87,7 @@ resource "azurerm_kubernetes_cluster" "cluster" {
   }
 
   default_node_pool {
-    name                = "agent"
+    name                = "system"
     min_count           = 1
     max_count           = 5
     enable_auto_scaling = true
@@ -109,51 +109,20 @@ resource "azurerm_kubernetes_cluster" "cluster" {
 
   depends_on = [
     azurerm_role_assignment.cluster_group_role_assignment,
-    azurerm_subnet_route_table_association.agent-rt-asc,
-    azurerm_subnet_route_table_association.agent-rt-asc2
+    azurerm_subnet_route_table_association.system-rt-asc,
+    azurerm_subnet_route_table_association.agent-rt-asc
   ]
 }
 
-resource "azurerm_kubernetes_cluster_node_pool" "valheim" {
-  name                  = "valheim"
-  kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
-  vm_size               = "Standard_D4s_v4"
-  min_count             = 0
-  max_count             = 1
-  node_taints           = ["pool=valheim:NoSchedule"]
-  node_labels           = { Pool = "valheim" }
-  enable_auto_scaling   = true
-
-  vnet_subnet_id = azurerm_subnet.agentnet.id
-
-  tags = {
-    Use = "Valheim Nodepool"
-  }
-}
-
-resource "azurerm_kubernetes_cluster_node_pool" "agent2" {
-  name                  = "btier"
+resource "azurerm_kubernetes_cluster_node_pool" "agent" {
+  name                  = "agents"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vm_size               = "Standard_B2s"
   min_count             = 0
   max_count             = 1
-  node_labels           = { subnet = "agent2" }
   enable_auto_scaling   = true
 
   vnet_subnet_id = azurerm_subnet.agentnet2.id
-}
-
-resource "azuread_application" "gb3s_app" {
-  display_name = var.name
-}
-
-resource "azuread_application_federated_identity_credential" "example" {
-  application_object_id = azuread_application.gb3s_app.object_id
-  display_name          = "gb3s-runners"
-  description           = "Deployments for my-repo"
-  audiences             = ["api://AzureADTokenExchange"]
-  issuer                = azurerm_kubernetes_cluster.cluster.oidc_issuer_url
-  subject               = "system:serviceaccount:actions-runner-system:peon"
 }
 
 output "cluster_identity" {
