@@ -15,7 +15,7 @@ variable "network" {
     name = string
     group = string
     group_id = string
-    address_space = list()
+    address_space = list(any)
   })
 }
 
