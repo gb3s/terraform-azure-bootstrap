@@ -17,7 +17,7 @@ resource "azurerm_role_assignment" "node_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "cluster_group_role_assignment" {
-  scope                = azurerm_resource_group.resource_group.id
+  scope                = azurerm_resource_group.bootsrap.id
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
 }
