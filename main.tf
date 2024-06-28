@@ -1,5 +1,5 @@
 resource "azurerm_resource_group" "bootstrap" {
-  name     = azurerm_resource_group.bootstrap.name
+  name     = var.name-resources
   location = var.location
 }
 
