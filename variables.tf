@@ -1,7 +1,11 @@
+variable "name" {
+  description = "Base naming convention"
+  
+}
+
 variable "cluster" {
   description = "Cluster Details"
   type = object({
-    name               = string
     kubernetes_version = string
   })
 }

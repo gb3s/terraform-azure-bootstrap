@@ -1,8 +1,13 @@
+resource "azurerm_resource_group" "bootsrap" {
+  name     = var.name
+  location = var.location
+}
+
 resource "azurerm_user_assigned_identity" "cluster_id" {
   resource_group_name = var.resource_group_name
   location            = var.location
 
-  name = "${var.cluster.name}-cluster"
+  name = "${var.name}-cluster"
 }
 
 resource "azurerm_role_assignment" "node_group_role_assignment" {
@@ -12,13 +17,13 @@ resource "azurerm_role_assignment" "node_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "cluster_group_role_assignment" {
-  scope                = data.azurerm_resource_group.resource_group.id
+  scope                = azurerm_resource_group.resource_group.id
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
 }
 
 resource "azurerm_virtual_network" "network" {
-  name                = "${var.cluster.name}-network"
+  name                = "${var.name}-network"
   location            = var.location
   resource_group_name = var.resource_group_name
   address_space       = var.network.address_space
@@ -31,7 +36,7 @@ resource "azurerm_role_assignment" "sub_read_role_assignment" {
 }
 
 resource "azurerm_route_table" "cluster" {
-  name                = "${var.cluster.name}-route-table"
+  name                = "${var.name}-route-table"
   resource_group_name = var.resource_group_name
   location            = var.location
 }
@@ -64,11 +69,11 @@ resource "azurerm_subnet_route_table_association" "agent-rt-asc2" {
 
 resource "azurerm_kubernetes_cluster" "cluster" {
   kubernetes_version  = var.cluster.kubernetes_version
-  name                = var.cluster.name
+  name                = var.name
   location            = var.location
   resource_group_name = var.resource_group_name
-  dns_prefix          = "${var.cluster.name}-cluster"
-  node_resource_group = "${var.cluster.name}-nodes"
+  dns_prefix          = "${var.name}-cluster"
+  node_resource_group = "${var.name}-nodes"
   oidc_issuer_enabled = true
 
   kubelet_identity {
@@ -139,7 +144,7 @@ resource "azurerm_kubernetes_cluster_node_pool" "agent2" {
 }
 
 resource "azuread_application" "gb3s_app" {
-  display_name = var.cluster.name
+  display_name = var.name
 }
 
 resource "azuread_application_federated_identity_credential" "example" {
