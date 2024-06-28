@@ -1,6 +1,6 @@
 resource "azurerm_user_assigned_identity" "cluster_id" {
-  resource_group_name = var.cluster.name
-  location            = var.cluster.location
+  resource_group_name = var.resource_group_name
+  location            = var.location
 
   name = "${var.cluster.name}-cluster"
 }
@@ -24,9 +24,9 @@ resource "azurerm_role_assignment" "cluster_group_role_assignment" {
 }
 
 resource "azurerm_virtual_network" "network" {
-  name = "${var.cluster.name}-network"
-  location = azurerm_resource_group.network.location
-  resource_group_name = azurerm_resource_group.network.name
+  name                = "${var.cluster.name}-network"
+  location            = azurerm_resource_group.network.location
+  resource_group_name = var.resource_group_name
   address_space       = var.network.address_space
 }
 
@@ -37,23 +37,23 @@ resource "azurerm_role_assignment" "sub_read_role_assignment" {
 }
 
 resource "azurerm_route_table" "cluster" {
-  name = "${var.cluster.name}-route-table"
-  resource_group_name = "${var.cluster.name}-network"
-  location = var.cluster.location
+  name                = "${var.cluster.name}-route-table"
+  resource_group_name = var.resource_group_name
+  location            = var.location
 }
 
 resource "azurerm_subnet" "agentnet" {
-  name = "agent-nodepool"
-  resource_group_name  = var.network.group
-  virtual_network_name = var.network.name
-  address_prefixes     = [ "10.0.4.0/24" ]
+  name                 = "agent-nodepool"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.network.name
+  address_prefixes     = ["10.0.4.0/24"]
 }
 
 resource "azurerm_subnet" "agentnet2" {
-  name = "agent-nodepool02"
-  resource_group_name  = var.network.group
-  virtual_network_name = var.network.name
-  address_prefixes     = [ "10.0.8.0/24" ]
+  name                 = "agent-nodepool02"
+  resource_group_name  = var.resource_group_name
+  virtual_network_name = azurerm_virtual_network.network.name
+  address_prefixes     = ["10.0.8.0/24"]
 }
 
 
@@ -69,17 +69,17 @@ resource "azurerm_subnet_route_table_association" "agent-rt-asc2" {
 
 
 resource "azurerm_kubernetes_cluster" "cluster" {
-  kubernetes_version         = "${var.cluster.kubernetes_version}" 
-  name                       = "${var.cluster.name}"
-  location                   = var.cluster.location
-  resource_group_name        = var.cluster.name
-  dns_prefix                 = "${var.cluster.name}-cluster"
-  node_resource_group        = "${var.cluster.name}-nodes"
-  oidc_issuer_enabled        = true
+  kubernetes_version  = var.cluster.kubernetes_version
+  name                = var.cluster.name
+  location            = var.location
+  resource_group_name = var.resource_group_name
+  dns_prefix          = "${var.cluster.name}-cluster"
+  node_resource_group = "${var.cluster.name}-nodes"
+  oidc_issuer_enabled = true
 
   kubelet_identity {
-    client_id = azurerm_user_assigned_identity.cluster_id.client_id
-    object_id = azurerm_user_assigned_identity.cluster_id.principal_id
+    client_id                 = azurerm_user_assigned_identity.cluster_id.client_id
+    object_id                 = azurerm_user_assigned_identity.cluster_id.principal_id
     user_assigned_identity_id = azurerm_user_assigned_identity.cluster_id.id
   }
 
@@ -91,21 +91,21 @@ resource "azurerm_kubernetes_cluster" "cluster" {
     name                = "agent"
     min_count           = 1
     max_count           = 5
-    enable_auto_scaling = true  
+    enable_auto_scaling = true
     vm_size             = "Standard_B2s"
     vnet_subnet_id      = azurerm_subnet.agentnet.id
   }
 
   network_profile {
-    network_plugin     = "kubenet"
-    
-    service_cidr       = "172.16.0.0/16"
-    dns_service_ip     = "172.16.0.10"
+    network_plugin = "kubenet"
+
+    service_cidr   = "172.16.0.0/16"
+    dns_service_ip = "172.16.0.10"
   }
 
   identity {
     type         = "UserAssigned"
-    identity_ids = [ azurerm_user_assigned_identity.cluster_id.id ]
+    identity_ids = [azurerm_user_assigned_identity.cluster_id.id]
   }
 
   depends_on = [
@@ -120,14 +120,14 @@ resource "azurerm_kubernetes_cluster_node_pool" "valheim" {
   name                  = "valheim"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vm_size               = "Standard_D4s_v4"
-  min_count = 0
-  max_count = 1
-  node_taints = [ "pool=valheim:NoSchedule" ]
-  node_labels = { Pool = "valheim"}
+  min_count             = 0
+  max_count             = 1
+  node_taints           = ["pool=valheim:NoSchedule"]
+  node_labels           = { Pool = "valheim" }
   enable_auto_scaling   = true
 
   vnet_subnet_id = azurerm_subnet.agentnet.id
-  
+
   tags = {
     Use = "Valheim Nodepool"
   }
@@ -137,9 +137,9 @@ resource "azurerm_kubernetes_cluster_node_pool" "agent2" {
   name                  = "btier"
   kubernetes_cluster_id = azurerm_kubernetes_cluster.cluster.id
   vm_size               = "Standard_B2s"
-  min_count = 0
-  max_count = 1
-  node_labels = { subnet = "agent2"}
+  min_count             = 0
+  max_count             = 1
+  node_labels           = { subnet = "agent2" }
   enable_auto_scaling   = true
 
   vnet_subnet_id = azurerm_subnet.agentnet2.id
