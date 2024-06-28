@@ -23,6 +23,13 @@ resource "azurerm_role_assignment" "cluster_group_role_assignment" {
   principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
 }
 
+resource "azurerm_virtual_network" "network" {
+  name = "${var.cluster.name}-network"
+  location = azurerm_resource_group.network.location
+  resource_group_name = azurerm_resource_group.network.name
+  address_space       = var.network.address_space
+}
+
 resource "azurerm_role_assignment" "sub_read_role_assignment" {
   scope                = "/subscriptions/${var.subscription_id}"
   role_definition_name = "Reader"
@@ -62,7 +69,7 @@ resource "azurerm_subnet_route_table_association" "agent-rt-asc2" {
 
 
 resource "azurerm_kubernetes_cluster" "cluster" {
-  kubernetes_version         = "1.26.6" 
+  kubernetes_version         = "${var.cluster.kubernetes_version}" 
   name                       = "${var.cluster.name}"
   location                   = var.cluster.location
   resource_group_name        = var.cluster.name

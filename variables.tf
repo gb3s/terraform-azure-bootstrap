@@ -4,6 +4,7 @@ variable "cluster" {
       name = string
       id = string
       location = string
+      kubernetes_version = string
     })
 }
 
@@ -14,8 +15,10 @@ variable "network" {
     name = string
     group = string
     group_id = string
+    address_space = object()
   })
 }
+
 variable "subscription_id" {
 }
 
