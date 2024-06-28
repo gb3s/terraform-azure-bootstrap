@@ -5,12 +5,6 @@ resource "azurerm_user_assigned_identity" "cluster_id" {
   name = "${var.cluster.name}-cluster"
 }
 
-resource "azurerm_role_assignment" "network_group_assignment" {
-  scope                = var.network.group_id
-  role_definition_name = "Owner"
-  principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
-}
-
 resource "azurerm_role_assignment" "node_group_role_assignment" {
   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${azurerm_kubernetes_cluster.cluster.node_resource_group}"
   role_definition_name = "Owner"
@@ -18,14 +12,14 @@ resource "azurerm_role_assignment" "node_group_role_assignment" {
 }
 
 resource "azurerm_role_assignment" "cluster_group_role_assignment" {
-  scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${var.cluster.name}"
+  scope                = data.azurerm_resource_group.resource_group.id
   role_definition_name = "Owner"
   principal_id         = azurerm_user_assigned_identity.cluster_id.principal_id
 }
 
 resource "azurerm_virtual_network" "network" {
   name                = "${var.cluster.name}-network"
-  location            = azurerm_resource_group.network.location
+  location            = var.location
   resource_group_name = var.resource_group_name
   address_space       = var.network.address_space
 }
