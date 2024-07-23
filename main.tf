@@ -10,6 +10,15 @@ resource "azurerm_user_assigned_identity" "cluster_id" {
   name = "${var.name}-cluster"
 }
 
+resource "azurerm_federated_identity_credential" "external-dns" {
+  name                = "external-dns"
+  resource_group_name = azurerm_resource_group.bootstrap.name
+  audience            = ["api://AzureADTokenExchange"]
+  issuer              = azurerm_kubernetes_cluster.cluster.oidc_issuer_url
+  parent_id           = azurerm_user_assigned_identity.cluster_id.id
+  subject             = "system:serviceaccount:external-dns:external-dns"
+}
+
 resource "azurerm_role_assignment" "node_group_role_assignment" {
   scope                = "/subscriptions/${var.subscription_id}/resourceGroups/${azurerm_kubernetes_cluster.cluster.node_resource_group}"
   role_definition_name = "Owner"
@@ -42,14 +51,14 @@ resource "azurerm_route_table" "cluster" {
 }
 
 resource "azurerm_subnet" "system_net" {
-  name                 = "agent-nodepool"
+  name                 = "system-nodepool"
   resource_group_name  = azurerm_resource_group.bootstrap.name
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = ["10.0.4.0/24"]
 }
 
 resource "azurerm_subnet" "agentnet" {
-  name                 = "agent-nodepool02"
+  name                 = "agent-nodepool"
   resource_group_name  = azurerm_resource_group.bootstrap.name
   virtual_network_name = azurerm_virtual_network.network.name
   address_prefixes     = ["10.0.8.0/24"]
